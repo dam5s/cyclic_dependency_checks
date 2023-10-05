@@ -5,18 +5,10 @@ import 'package:cyclic_dependency_checks/cycle_detection/module_dependency.dart'
 import 'package:cyclic_dependency_checks/cycle_detection/module_dependency_graph.dart';
 
 void main(List<String> args) async {
-  switch (args) {
-    case [final path]:
-      await _run(path);
-    default:
-      throw Exception(
-        'Expected exactly only one argument, '
-            'the path to dart package folder as argument',
-      );
-  }
+  await _run(path: args.firstOrNull ?? '.');
 }
 
-Future _run(String path) async {
+Future _run({required String path}) async {
   final stopwatch = Stopwatch()..start();
   final cycles = await CycleDetector().detect(path);
   stopwatch.stop();
@@ -25,7 +17,7 @@ Future _run(String path) async {
 
   if (cycles.isNotEmpty) {
     stderr.writeln('Detected cycles after ${formattedTime}');
-    for (var cycle in cycles) {
+    for (final cycle in cycles) {
       cycle.printError();
     }
     exit(1);
