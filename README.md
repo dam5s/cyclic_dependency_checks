@@ -7,7 +7,7 @@ This is a small cyclic dependency checker for Dart projects.
 From inside one of your Dart projects
 
 ```
-dart pub add cyclic_dependency_checks --git-url=https://github.com/dam5s/cyclic_dependency_checks.git --git-ref=release/0.1.0
+dart pub add cyclic_dependency_checks --git-url=https://github.com/dam5s/cyclic_dependency_checks.git --git-ref=release/0.2.0
 ```
 
 ## Running it
@@ -15,5 +15,5 @@ dart pub add cyclic_dependency_checks --git-url=https://github.com/dam5s/cyclic_
 Again, from inside your Dart project
 
 ```
-dart run cyclic_dependency_checks .
+dart run cyclic_dependency_checks
 ```
