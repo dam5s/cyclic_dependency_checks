@@ -7,3 +7,5 @@ environment:
 
 dev_dependencies:
   test: ^1.24.5
+dependencies:
+  args: ^2.4.2
