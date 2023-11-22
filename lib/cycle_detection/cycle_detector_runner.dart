@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:cyclic_dependency_checks/cycle_detection/melos_paths.dart';
 
 import 'cycle_detector.dart';
 import 'module_dependency_graph.dart';
@@ -24,6 +25,7 @@ class CycleDetectorRunner {
   Future<bool> run(List<String> args) async {
     final parser = ArgParser()
       ..addOption('path', abbr: 'p')
+      ..addOption('mono-repo', abbr: 'm')
       ..addOption('max-depth', abbr: 'd');
 
     final parsedArgs = parser.tryParse(args);
@@ -31,18 +33,45 @@ class CycleDetectorRunner {
       return false;
     }
 
-    final path = parsedArgs.getString('path', fallback: '.');
-    final maxDepth = parsedArgs.tryGetInt('max-depth');
+    final pathArg = parsedArgs['path'];
+    final monorepoArg = parsedArgs['mono-repo'];
+    final maxDepthArg = parsedArgs.tryGetInt('max-depth');
 
+    final inferredPaths = await _tryGetPaths(pathArg, monorepoArg);
+    if (inferredPaths == null) {
+      printer.err(
+        'Failed to infer path from arguments, only one of path or monorepo can be specified',
+      );
+      return false;
+    }
+
+    var success = true;
+
+    for (final path in inferredPaths) {
+      final pathSuccess = await _runForPath(path, maxDepthArg);
+      success = success && pathSuccess;
+    }
+
+    return success;
+  }
+
+  Future<List<String>?> _tryGetPaths(String? packagePath, String? monorepoPath) async =>
+      switch ((packagePath, monorepoPath)) {
+        (null, null) => ['.'],
+        (String p, null) => [p],
+        (null, String p) => await MelosPaths.tryGet(p),
+        (_, _) => null,
+      };
+
+  Future<bool> _runForPath(String path, int? maxDepth) async {
     final stopwatch = Stopwatch()..start();
     final cycles = await detector.detect(path, maxDepth: maxDepth);
-
     stopwatch.stop();
 
     final formattedTime = stopwatch.elapsed.toString().substring(0, 11);
 
     if (cycles.isNotEmpty) {
-      printer.err('Detected cycles after ${formattedTime}');
+      printer.err('[$path] Detected cycles after ${formattedTime}');
 
       for (final cycle in cycles) {
         printer.err(cycle.path().join(' -> '));
@@ -51,7 +80,7 @@ class CycleDetectorRunner {
       return false;
     }
 
-    printer.out('No import cycles were detected after ${formattedTime}');
+    printer.out('[$path] No cycles detected after ${formattedTime}');
 
     return true;
   }
@@ -70,10 +99,6 @@ extension _SafeParse on ArgParser {
 }
 
 extension _TypeSafeArgs on ArgResults {
-  String getString(String name, {required String fallback}) {
-    return this[name] ?? fallback;
-  }
-
   int? tryGetInt(String name) {
     final value = this[name];
 
