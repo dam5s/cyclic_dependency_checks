@@ -42,4 +42,6 @@ dart run cyclic_dependency_checks
 
  * `--path` or `-p` for the path to the module that is checked, path should be a folder containing a `pubspec.yaml`,
    defaults to current working directory.
+ * `--mono-repo` or `-m` as an alternative to path, use the path to your Melos based mono-repo
+   to run against all its components.
  * `--max-depth` or `-d` to limit the depth of the check, defaults to no max depth.
