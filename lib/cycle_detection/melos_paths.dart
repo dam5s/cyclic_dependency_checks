@@ -3,8 +3,10 @@ import 'package:path/path.dart' as path;
 
 final class MelosPaths {
   static Future<List<String>?> tryGet(String monorepoPath) async {
+    final melos = Platform.isWindows ? 'melos.bat' : 'melos';
+
     final listResult = await Process.run(
-      'melos',
+      melos,
       ['list', '-p'],
       workingDirectory: monorepoPath,
     );
