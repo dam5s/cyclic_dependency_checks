@@ -1,7 +1,8 @@
-.PHONY: install check
+.PHONY: setup check
 
-install:
+setup:
 	dart pub get
+	dart pub global activate melos
 
 check:
 	dart format lib --line-length 100 --set-exit-if-changed

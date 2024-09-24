@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 
 final class MelosPaths {
-  static Future<List<String>?> tryGet(String monorepoPath) async {
+  static Future<List<String>?> tryGet(String monorepoPath, List<String> exclusions) async {
     final melos = Platform.isWindows ? 'melos.bat' : 'melos';
 
     final listResult = await Process.run(
@@ -21,6 +21,7 @@ final class MelosPaths {
     return output
         .split('\n')
         .where((p) => p.trim().length > 0)
+        .where((p) => !exclusions.contains(path.basename(p)))
         .map((p) => path.relative(p, from: currentDir.absolute.path))
         .toList();
   }

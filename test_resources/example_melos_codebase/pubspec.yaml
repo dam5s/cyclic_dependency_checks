@@ -1,0 +1,6 @@
+name: example_melos_codebase
+
+environment:
+  sdk: '>=3.0.5 <4.0.0'
+dev_dependencies:
+  melos: ^6.1.0

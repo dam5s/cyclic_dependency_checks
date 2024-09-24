@@ -2,16 +2,17 @@ import 'package:cyclic_dependency_checks/cycle_detection/cycle_detector.dart';
 import 'package:cyclic_dependency_checks/cycle_detection/cycle_detector_runner.dart';
 import 'package:cyclic_dependency_checks/cycle_detection/module_dependency.dart';
 import 'package:test/test.dart';
+import 'package:path/path.dart' as path;
 
 class TestCycleDetector extends CycleDetector {
   List<List<ModuleDependency>> stubbedCycles = [];
-  String? recordedPackagePath;
-  int? recordedMaxDepth;
+  List<String> recordedPackagePaths = [];
+  List<int?> recordedMaxDepths = [];
 
   @override
   Future<List<List<ModuleDependency>>> detect(String packagePath, {int? maxDepth}) async {
-    recordedPackagePath = packagePath;
-    recordedMaxDepth = maxDepth;
+    recordedPackagePaths.add(packagePath);
+    recordedMaxDepths.add(maxDepth);
     return stubbedCycles;
   }
 }
@@ -35,8 +36,8 @@ void main() {
 
     expect(success, isTrue);
     expect(printer.errLog, isEmpty);
-    expect(detector.recordedPackagePath, equals('.'));
-    expect(detector.recordedMaxDepth, isNull);
+    expect(detector.recordedPackagePaths, equals(['.']));
+    expect(detector.recordedMaxDepths, equals([null]));
   });
 
   test('with no arguments, on error', () async {
@@ -54,32 +55,76 @@ void main() {
     expect(printer.errLog, contains('module:a -> module:b -> module:a'));
   });
 
-  test('with full length args', () async {
-    final printer = RecordingPrinter();
-    final detector = TestCycleDetector();
-    final runner = CycleDetectorRunner(detector: detector, printer: printer);
+  group('specifying the path', () {
+    test('with full length args', () async {
+      final printer = RecordingPrinter();
+      final detector = TestCycleDetector();
+      final runner = CycleDetectorRunner(detector: detector, printer: printer);
 
-    await runner.run([
-      '--path', '/some/path',
-      '--max-depth', '10',
-    ]);
+      await runner.run(['--path', '/some/path', '--max-depth', '10']);
 
-    expect(detector.recordedPackagePath, equals('/some/path'));
-    expect(detector.recordedMaxDepth, equals(10));
+      expect(detector.recordedPackagePaths, equals(['/some/path']));
+      expect(detector.recordedMaxDepths, equals([10]));
+    });
+
+    test('with short name args', () async {
+      final printer = RecordingPrinter();
+      final detector = TestCycleDetector();
+      final runner = CycleDetectorRunner(detector: detector, printer: printer);
+
+      await runner.run(['-p', '/some/path', '-d', '10']);
+
+      expect(detector.recordedPackagePaths, equals(['/some/path']));
+      expect(detector.recordedMaxDepths, equals([10]));
+    });
   });
 
-  test('with short name args', () async {
-    final printer = RecordingPrinter();
-    final detector = TestCycleDetector();
-    final runner = CycleDetectorRunner(detector: detector, printer: printer);
+  group('specifying the path to a melos mono repo', () {
+    test('with long argument', () async {
+      final printer = RecordingPrinter();
+      final detector = TestCycleDetector();
+      final runner = CycleDetectorRunner(detector: detector, printer: printer);
 
-    await runner.run([
-      '-p', '/some/path',
-      '-d', '10',
-    ]);
+      await runner.run([
+        '--mono-repo',
+        'test_resources/example_melos_codebase',
+        '--max-depth',
+        '5',
+      ]);
 
-    expect(detector.recordedPackagePath, equals('/some/path'));
-    expect(detector.recordedMaxDepth, equals(10));
+      expect(detector.recordedPackagePaths, [
+        path.join('test_resources', 'example_melos_codebase', 'project_a'),
+        path.join('test_resources', 'example_melos_codebase', 'project_b'),
+      ]);
+      expect(detector.recordedMaxDepths, [5, 5]);
+    });
+
+    test('with short argument', () async {
+      final printer = RecordingPrinter();
+      final detector = TestCycleDetector();
+      final runner = CycleDetectorRunner(detector: detector, printer: printer);
+
+      await runner.run(['-m', 'test_resources/example_melos_codebase', '-d', '5']);
+
+      expect(detector.recordedPackagePaths, [
+        path.join('test_resources', 'example_melos_codebase', 'project_a'),
+        path.join('test_resources', 'example_melos_codebase', 'project_b'),
+      ]);
+      expect(detector.recordedMaxDepths, [5, 5]);
+    });
+
+    test('excluding a specific subproject', () async {
+      final printer = RecordingPrinter();
+      final detector = TestCycleDetector();
+      final runner = CycleDetectorRunner(detector: detector, printer: printer);
+
+      final projectPath = 'test_resources/example_melos_codebase';
+      await runner.run(['-m', projectPath, '-x', 'project_a', '-x', 'project_c']);
+
+      expect(detector.recordedPackagePaths, [
+        path.join('test_resources', 'example_melos_codebase', 'project_b'),
+      ]);
+    });
   });
 
   test('with invalid arguments', () async {
@@ -87,12 +132,10 @@ void main() {
     final detector = TestCycleDetector();
     final runner = CycleDetectorRunner(detector: detector, printer: printer);
 
-    final success = await runner.run([
-      '--oops'
-    ]);
+    final success = await runner.run(['--oops']);
 
     expect(success, equals(false));
-    expect(detector.recordedPackagePath, isNull);
-    expect(detector.recordedMaxDepth, isNull);
+    expect(detector.recordedPackagePaths, []);
+    expect(detector.recordedMaxDepths, []);
   });
 }

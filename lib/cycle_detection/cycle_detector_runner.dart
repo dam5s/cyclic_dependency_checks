@@ -26,7 +26,8 @@ class CycleDetectorRunner {
     final parser = ArgParser()
       ..addOption('path', abbr: 'p')
       ..addOption('mono-repo', abbr: 'm')
-      ..addOption('max-depth', abbr: 'd');
+      ..addOption('max-depth', abbr: 'd')
+      ..addMultiOption('exclude', abbr: 'x');
 
     final parsedArgs = parser.tryParse(args);
     if (parsedArgs == null) {
@@ -36,8 +37,9 @@ class CycleDetectorRunner {
     final pathArg = parsedArgs['path'];
     final monorepoArg = parsedArgs['mono-repo'];
     final maxDepthArg = parsedArgs.tryGetInt('max-depth');
+    final exclusions = parsedArgs['exclude'];
 
-    final inferredPaths = await _tryGetPaths(pathArg, monorepoArg);
+    final inferredPaths = await _tryGetPaths(pathArg, monorepoArg, exclusions);
     if (inferredPaths == null) {
       printer.err(
         'Failed to infer path from arguments, only one of path or monorepo can be specified',
@@ -55,11 +57,15 @@ class CycleDetectorRunner {
     return success;
   }
 
-  Future<List<String>?> _tryGetPaths(String? packagePath, String? monorepoPath) async =>
+  Future<List<String>?> _tryGetPaths(
+    String? packagePath,
+    String? monorepoPath,
+    List<String> exclusions,
+  ) async =>
       switch ((packagePath, monorepoPath)) {
         (null, null) => ['.'],
         (String p, null) => [p],
-        (null, String p) => await MelosPaths.tryGet(p),
+        (null, String p) => await MelosPaths.tryGet(p, exclusions),
         (_, _) => null,
       };
 

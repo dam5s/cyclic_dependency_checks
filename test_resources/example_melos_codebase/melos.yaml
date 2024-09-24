@@ -1,0 +1,5 @@
+name: example_melos_codebase
+
+packages:
+  - project_a
+  - project_b

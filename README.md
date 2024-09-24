@@ -44,4 +44,5 @@ dart run cyclic_dependency_checks
    defaults to current working directory.
  * `--mono-repo` or `-m` as an alternative to path, use the path to your Melos based mono-repo
    to run against all its components.
+ * `--exclude` or `-x` can be used multiple times or as coma separated values to exclude specified projects from the mono-repo.
  * `--max-depth` or `-d` to limit the depth of the check, defaults to no max depth.
