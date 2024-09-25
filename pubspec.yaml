@@ -1,6 +1,6 @@
 name: cyclic_dependency_checks
 description: Cyclic Dependency checks for dart projects
-version: 0.6.0
+version: 0.7.0
 
 environment:
   sdk: '>=3.0.5 <4.0.0'
